@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signatura &mdash; Generador de Signaturas Topográficas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+:root{
+  --wood-deepest:#170f0a;
+  --wood:#26170e;
+  --wood-2:#331f13;
+  --leather:#5a3a24;
+  --leather-light:#8a5a35;
+  --parchment:#f2e6c7;
+  --parchment-2:#e8d7ab;
+  --parchment-3:#ddc98e;
+  --ink:#2c1d10;
+  --ink-soft:#5a4630;
+  --gold:#b3862f;
+  --gold-bright:#e0b45c;
+  --wax:#7c2222;
+  --wax-dark:#5c1717;
+  --shadow:rgba(15,9,4,.55);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(ellipse at top left, rgba(255,255,255,.04), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(0,0,0,.35), transparent 60%),
+    repeating-linear-gradient(115deg, rgba(0,0,0,.05) 0px, rgba(0,0,0,.05) 2px, transparent 2px, transparent 5px),
+    linear-gradient(160deg, var(--wood-2), var(--wood) 55%, var(--wood-deepest));
+  color:var(--ink);
+  font-family:'EB Garamond', Georgia, serif;
+  padding:36px 18px 60px;
+}
+
+.wrap{max-width:1180px;margin:0 auto;}
+
+/* ---------- Header ---------- */
+header.title-block{
+  text-align:center;
+  margin-bottom:34px;
+  color:var(--parchment);
+}
+.crest{
+  width:64px;height:64px;margin:0 auto 6px;opacity:.92;
+}
+.title-block h1{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:600;
+  font-size:clamp(2.1rem,5vw,3.1rem);
+  letter-spacing:.05em;
+  margin:0 0 6px;
+  text-shadow:0 2px 10px rgba(0,0,0,.5);
+}
+.title-block .sub{
+  font-style:italic;
+  font-size:1.05rem;
+  color:var(--parchment-3);
+  letter-spacing:.03em;
+}
+.flourish{
+  width:340px;max-width:70vw;height:18px;margin:14px auto 0;opacity:.75;
+}
+
+/* ---------- Layout ---------- */
+.grid{
+  display:grid;
+  grid-template-columns:1.15fr .95fr;
+  gap:26px;
+  align-items:start;
+}
+@media (max-width:920px){
+  .grid{grid-template-columns:1fr;}
+}
+
+.panel{
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,.5), transparent 45%),
+    linear-gradient(180deg, var(--parchment), var(--parchment-2));
+  border-radius:4px;
+  padding:30px 30px 26px;
+  box-shadow:0 18px 40px var(--shadow), inset 0 0 0 1px rgba(120,80,30,.25);
+  position:relative;
+  border:1px solid rgba(80,50,20,.35);
+}
+.panel::before{
+  content:"";
+  position:absolute; inset:8px;
+  border:1px solid rgba(140,100,45,.35);
+  pointer-events:none;
+}
+.panel h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.5rem;
+  font-weight:600;
+  margin:0 0 4px;
+  color:var(--ink);
+  letter-spacing:.02em;
+}
+.panel .panel-sub{
+  font-style:italic;
+  color:var(--ink-soft);
+  font-size:.92rem;
+  margin:0 0 22px;
+}
+.step-num{
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  width:26px;height:26px;
+  border-radius:50%;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  font-size:.95rem;
+  margin-right:10px;
+  transform:translateY(-1px);
+}
+
+/* ---------- Fields ---------- */
+.field{margin-bottom:22px;position:relative;}
+.field label{
+  display:block;
+  font-size:.82rem;
+  text-transform:uppercase;
+  letter-spacing:.11em;
+  color:var(--ink-soft);
+  margin-bottom:7px;
+  font-family:'EB Garamond',serif;
+  font-weight:600;
+}
+.field .hint{
+  font-size:.82rem;
+  color:var(--ink-soft);
+  font-style:italic;
+  margin-top:6px;
+}
+input[type=text], input[type=number]{
+  width:100%;
+  font-family:'EB Garamond',serif;
+  font-size:1.08rem;
+  padding:11px 14px;
+  border:1px solid rgba(90,60,25,.45);
+  background:rgba(255,252,240,.55);
+  color:var(--ink);
+  border-radius:2px;
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+input[type=text]:focus, input[type=number]:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(179,134,47,.18);
+  background:rgba(255,255,245,.85);
+}
+input[readonly]{cursor:default; background:rgba(230,218,185,.6);}
+
+/* combobox */
+.combo{position:relative;}
+.combo-results{
+  position:absolute;
+  left:0;right:0;top:calc(100% + 4px);
+  background:#fbf3dd;
+  border:1px solid rgba(90,60,25,.45);
+  box-shadow:0 14px 30px rgba(20,12,5,.35);
+  max-height:280px;
+  overflow-y:auto;
+  z-index:30;
+  border-radius:2px;
+  display:none;
+}
+.combo-results.open{display:block;}
+.combo-item{
+  padding:9px 14px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(90,60,25,.14);
+  font-size:.98rem;
+  display:flex;gap:10px;align-items:baseline;
+}
+.combo-item:last-child{border-bottom:none;}
+.combo-item:hover, .combo-item.active{
+  background:rgba(179,134,47,.18);
+}
+.combo-item .num{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  color:var(--wax);
+  min-width:38px;
+  font-size:1.05rem;
+}
+.combo-item .path{
+  font-size:.72rem;
+  color:var(--ink-soft);
+  display:block;
+  font-style:italic;
+}
+.chosen-chip{
+  margin-top:10px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  background:rgba(179,134,47,.12);
+  border:1px solid rgba(179,134,47,.4);
+  border-radius:2px;
+  padding:10px 12px;
+  font-size:.92rem;
+  display:none;
+}
+.chosen-chip.show{display:flex;}
+.chosen-chip .cnum{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  font-size:1.2rem;
+  color:var(--wax);
+}
+.chosen-chip .cbreadcrumb{color:var(--ink-soft); font-style:italic; font-size:.82rem;}
+
+.class-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.class-chip{
+  font-size:.72rem;
+  padding:5px 9px;
+  border:1px solid rgba(90,60,25,.35);
+  border-radius:20px;
+  cursor:pointer;
+  color:var(--ink-soft);
+  background:rgba(255,255,255,.3);
+  letter-spacing:.02em;
+  transition:.15s;
+}
+.class-chip:hover{background:var(--gold); color:#fff; border-color:var(--gold);}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:520px){.row2{grid-template-columns:1fr;}}
+
+.check-row{
+  display:flex;align-items:center;gap:10px;
+  margin-top:2px;
+}
+.check-row input[type=checkbox]{
+  width:18px;height:18px;accent-color:var(--wax);
+}
+.check-row label{margin:0; font-size:.95rem; text-transform:none; letter-spacing:0; color:var(--ink); font-weight:500;}
+
+.cutter-row{display:flex; gap:10px; align-items:center;}
+.cutter-row input{flex:1;}
+.link-btn{
+  background:none;border:none;
+  color:var(--wax);
+  font-family:'EB Garamond',serif;
+  font-style:italic;
+  font-size:.85rem;
+  cursor:pointer;
+  text-decoration:underline;
+  padding:0;
+  white-space:nowrap;
+}
+
+.btn-row{display:flex; gap:12px; margin-top:26px; flex-wrap:wrap;}
+button.primary, button.ghost{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  font-size:.92rem;
+  padding:12px 22px;
+  border-radius:2px;
+  cursor:pointer;
+  transition:.15s;
+}
+button.primary{
+  background:linear-gradient(180deg, var(--gold-bright), var(--gold));
+  border:1px solid #8a6423;
+  color:#2a1c0c;
+  box-shadow:0 6px 14px rgba(120,85,20,.35);
+}
+button.primary:hover{filter:brightness(1.07); transform:translateY(-1px);}
+button.ghost{
+  background:transparent;
+  border:1px solid rgba(90,60,25,.5);
+  color:var(--ink-soft);
+}
+button.ghost:hover{background:rgba(90,60,25,.08);}
+
+/* ---------- Result column ---------- */
+.result-stack{display:flex; flex-direction:column; gap:20px;}
+
+.card-catalog{
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255,255,255,.5), transparent 50%),
+    linear-gradient(180deg,var(--parchment),var(--parchment-2));
+  border-radius:4px;
+  padding:26px 26px 22px;
+  box-shadow:0 18px 40px var(--shadow), inset 0 0 0 1px rgba(120,80,30,.25);
+  border:1px solid rgba(80,50,20,.35);
+  position:relative;
+}
+.card-catalog::before{
+  content:"";
+  position:absolute; inset:8px;
+  border:1px solid rgba(140,100,45,.35);
+  pointer-events:none;
+}
+.card-catalog .ficha-head{
+  display:flex; justify-content:space-between; align-items:baseline;
+  border-bottom:1px solid rgba(90,60,25,.4);
+  padding-bottom:10px; margin-bottom:16px;
+}
+.card-catalog .ficha-head h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.35rem; margin:0; letter-spacing:.03em;
+}
+.card-catalog .ficha-head span{
+  font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft);
+}
+.ficha-line{
+  display:flex; justify-content:space-between; gap:10px;
+  padding:7px 0;
+  border-bottom:1px dotted rgba(90,60,25,.3);
+  font-size:.95rem;
+}
+.ficha-line:last-of-type{border-bottom:none;}
+.ficha-line .k{color:var(--ink-soft); font-style:italic;}
+.ficha-line .v{font-weight:600; text-align:right;}
+
+.sig-display{
+  margin-top:18px;
+  text-align:center;
+  padding:16px 10px 12px;
+  background:rgba(255,255,255,.35);
+  border:1px dashed rgba(124,34,34,.5);
+  border-radius:3px;
+}
+.sig-display .lbl{
+  font-size:.72rem; text-transform:uppercase; letter-spacing:.14em;
+  color:var(--wax); margin-bottom:6px;
+}
+.sig-display .big{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  font-size:clamp(1.6rem,4vw,2.15rem);
+  color:var(--ink);
+  letter-spacing:.03em;
+  word-break:break-all;
+}
+.sig-actions{display:flex; gap:10px; justify-content:center; margin-top:14px;}
+
+/* spine label */
+.spine-wrap{
+  display:flex; justify-content:center; align-items:flex-start; gap:18px; padding-top:6px;
+}
+.spine-label{
+  width:96px;
+  min-height:230px;
+  background:linear-gradient(180deg,#fffdf5,#f3ead0);
+  border:1px solid #8a6423;
+  box-shadow:0 8px 18px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.5);
+  border-radius:1px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  padding:14px 6px;
+  position:relative;
+  font-family:'Cormorant Garamond',serif;
+  color:#221708;
+}
+.spine-label::before{
+  content:"";
+  position:absolute; inset:5px;
+  border:1px solid rgba(90,60,20,.35);
+}
+.spine-label .sp-dewey{font-size:1.5rem; font-weight:700; line-height:1.05; text-align:center;}
+.spine-label .sp-div{width:60%; height:1px; background:rgba(90,60,20,.4); margin:8px 0;}
+.spine-label .sp-cutter{font-size:1.15rem; font-weight:600;}
+.spine-label .sp-year{font-size:.95rem; margin-top:10px; color:#5a4630;}
+.spine-label .sp-vol{font-size:.8rem; margin-top:4px; font-style:italic; color:#7c2222;}
+.spine-caption{
+  font-size:.72rem; color:var(--parchment-3); font-style:italic; text-align:center; margin-top:8px; max-width:96px;
+}
+
+/* ---------- Batch table ---------- */
+.batch-panel{grid-column:1 / -1; margin-top:8px;}
+.batch-head{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+  margin-bottom:16px;
+}
+table.ledger{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.92rem;
+}
+table.ledger thead th{
+  text-align:left;
+  font-family:'EB Garamond',serif;
+  text-transform:uppercase;
+  font-size:.7rem;
+  letter-spacing:.09em;
+  color:var(--ink-soft);
+  border-bottom:1px solid rgba(90,60,25,.45);
+  padding:8px 8px;
+}
+table.ledger tbody td{
+  padding:9px 8px;
+  border-bottom:1px dotted rgba(90,60,25,.28);
+  vertical-align:top;
+}
+table.ledger tbody tr:hover{background:rgba(179,134,47,.08);}
+table.ledger .sig-cell{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:700;
+  color:var(--wax);
+  font-size:1.05rem;
+}
+table.ledger .mini-btn{
+  background:none;border:none;cursor:pointer;
+  color:var(--ink-soft);
+  font-size:.8rem;
+  text-decoration:underline;
+  font-style:italic;
+  padding:2px;
+}
+table.ledger .mini-btn:hover{color:var(--wax);}
+.empty-row td{
+  text-align:center;
+  padding:26px 0;
+  color:var(--ink-soft);
+  font-style:italic;
+}
+
+footer.note{
+  max-width:1180px; margin:34px auto 0; text-align:center;
+  color:var(--parchment-3); font-size:.82rem; font-style:italic; line-height:1.6;
+  opacity:.85;
+}
+footer.note a{color:var(--gold-bright);}
+
+::selection{background:var(--gold); color:#2a1c0c;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="title-block">
+    <svg class="crest" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="30" stroke="#e0b45c" stroke-width="1.4"/>
+      <path d="M20 44V20l12-6 12 6v24" stroke="#e0b45c" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M20 44h24M26 44V26M38 44V26" stroke="#e0b45c" stroke-width="1.2"/>
+      <circle cx="32" cy="18" r="2.2" fill="#e0b45c"/>
+    </svg>
+    <h1>Signaturas Topográficas</h1>
+    <div class="sub">Clasificación Decimal Dewey &middot; Tabla de Cutter &middot; Ficha de catalogación</div>
+    <svg class="flourish" viewBox="0 0 340 18" xmlns="http://www.w3.org/2000/svg">
+      <line x1="0" y1="9" x2="140" y2="9" stroke="#e0b45c" stroke-width="1"/>
+      <line x1="200" y1="9" x2="340" y2="9" stroke="#e0b45c" stroke-width="1"/>
+      <circle cx="170" cy="9" r="4" fill="none" stroke="#e0b45c" stroke-width="1"/>
+      <circle cx="170" cy="9" r="1.4" fill="#e0b45c"/>
+      <circle cx="155" cy="9" r="1.6" fill="#e0b45c"/>
+      <circle cx="185" cy="9" r="1.6" fill="#e0b45c"/>
+    </svg>
+  </header>
+
+  <div class="grid">
+
+    <!-- FORM PANEL -->
+    <section class="panel">
+      <h2>Datos de la obra</h2>
+      <p class="panel-sub">Complete los campos y la signatura se irá construyendo del lado derecho.</p>
+
+      <div class="field">
+        <label><span class="step-num">1</span>Materia &mdash; categoría Dewey</label>
+        <div class="combo">
+          <input type="text" id="deweySearch" placeholder="Escriba un tema o un número, ej. &ldquo;Venezuela&rdquo; o &ldquo;987&rdquo;" autocomplete="off">
+          <div class="combo-results" id="deweyResults"></div>
+        </div>
+        <div class="chosen-chip" id="deweyChip">
+          <span class="cnum" id="deweyChipNum">000</span>
+          <span>
+            <span id="deweyChipDesc">&mdash;</span>
+            <span class="cbreadcrumb" id="deweyChipPath"></span>
+          </span>
+        </div>
+        <div class="class-chips" id="classChips"></div>
+      </div>
+
+      <div class="field">
+        <label>Extensión decimal <span style="text-transform:none; font-style:italic; color:var(--ink-soft);">(opcional)</span></label>
+        <input type="text" id="deweyExt" placeholder="Ej.: 072 &rarr; 987.072" maxlength="6">
+        <p class="hint">Solo si necesita mayor especificidad que la tabla de tres cifras.</p>
+      </div>
+
+      <div class="field">
+        <label><span class="step-num">2</span>Apellido del autor</label>
+        <input type="text" id="surname" placeholder="Ej.: García Márquez" autocomplete="off">
+        <div class="cutter-row" style="margin-top:10px;">
+          <input type="text" id="cutterOut" readonly>
+          <button class="link-btn" id="editCutterBtn" type="button">editar</button>
+        </div>
+        <p class="hint">Número Cutter calculado con la tabla general de cutterización. Puede editarlo si conoce el número oficial de su catálogo.</p>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label><span class="step-num">3</span>Año de publicación</label>
+          <input type="text" id="year" placeholder="2005" maxlength="4" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label><span class="step-num">4</span>Volumen</label>
+          <div class="check-row" style="margin-top:12px;">
+            <input type="checkbox" id="hasVol">
+            <label for="hasVol">Esta obra tiene volumen</label>
+          </div>
+          <input type="text" id="volNum" placeholder="N.º de volumen" style="margin-top:10px; display:none;" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Título <span style="text-transform:none; font-style:italic; color:var(--ink-soft);">(opcional, solo para su listado)</span></label>
+        <input type="text" id="titleField" placeholder="Título de la obra">
+      </div>
+
+      <div class="btn-row">
+        <button class="primary" id="addToLedger" type="button">Añadir a la lista</button>
+        <button class="ghost" id="clearForm" type="button">Limpiar campos</button>
+      </div>
+    </section>
+
+    <!-- RESULT COLUMN -->
+    <section class="result-stack">
+      <div class="card-catalog">
+        <div class="ficha-head">
+          <h2>Ficha de signatura</h2>
+          <span>vista previa</span>
+        </div>
+        <div class="ficha-line"><span class="k">Dewey</span><span class="v" id="fDewey">&mdash;</span></div>
+        <div class="ficha-line"><span class="k">Materia</span><span class="v" id="fMateria">&mdash;</span></div>
+        <div class="ficha-line"><span class="k">Cutter (autor)</span><span class="v" id="fCutter">&mdash;</span></div>
+        <div class="ficha-line"><span class="k">Año</span><span class="v" id="fAno">&mdash;</span></div>
+        <div class="ficha-line"><span class="k">Volumen</span><span class="v" id="fVol">&mdash;</span></div>
+
+        <div class="sig-display">
+          <div class="lbl">Signatura topográfica</div>
+          <div class="big" id="sigBig">&mdash;</div>
+        </div>
+        <div class="sig-actions">
+          <button class="ghost" id="copySig" type="button">Copiar signatura</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="spine-wrap">
+          <div>
+            <div class="spine-label">
+              <div class="sp-dewey" id="spDewey">&mdash;</div>
+              <div class="sp-div"></div>
+              <div class="sp-cutter" id="spCutter">&mdash;</div>
+              <div class="sp-year" id="spYear"></div>
+              <div class="sp-vol" id="spVol"></div>
+            </div>
+            <div class="spine-caption">Así se vería en el lomo del libro</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BATCH PANEL -->
+    <section class="panel batch-panel">
+      <div class="batch-head">
+        <div>
+          <h2 style="margin-bottom:2px;">Lista de catalogación</h2>
+          <p class="panel-sub" style="margin-bottom:0;">Las obras que agregue quedarán aquí para exportarlas juntas. &ldquo;Imprimir etiquetas&rdquo; genera un documento Word con recuadros de corte de 10&nbsp;&times;&nbsp;2,5&nbsp;cm (Courier New 10, centrado, hoja Carta) listos para recortar y pegar en el lomo.</p>
+        </div>
+        <button class="ghost" id="exportCsv" type="button">Exportar CSV</button>
+        <button class="primary" id="printLabels" type="button">Imprimir etiquetas (Word)</button>
+      </div>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Título</th><th>Autor</th><th>Dewey</th><th>Cutter</th><th>Año</th><th>Vol.</th><th>Signatura</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody">
+          <tr class="empty-row"><td colspan="8">Aún no ha añadido ninguna obra.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </div>
+
+  <footer class="note">
+    El número Cutter se genera automáticamente a partir de la tabla general de cutterización (letra inicial del apellido y reglas
+    de expansión alfabética). Es una aproximación orientativa: revíselo contra su tabla Cutter&ndash;Sanborn oficial cuando
+    necesite evitar colisiones en el estante.
+  </footer>
+
+</div>
+<script>
+const DEWEY = 
+{"000":"Generalidades","001":"Conocimiento","002":"El libro","003":"Sistemas","004":"Procesamiento de datos. Ciencia de los computadores","005":"Programación, programas y datos de computador","006":"Métodos especiales de computador","007":"(sin asignar)","008":"(sin asignar)","009":"(sin asignar)","010":"Bibliografía","011":"Bibliografías","012":"Bibliografías de individuos","013":"De obras por categorías específicas de autores","014":"De obras anónimas y seudónimas","015":"De obras de lugares específicos","016":"De obras sobre temas específicos","017":"Catálogos generales por materia","018":"Catálogos ordenados por autor, fecha, etc.","019":"Catálogos diccionario","020":"Bibliotecología y ciencias de la información","021":"Relaciones bibliotecarias","022":"Administración de la planta física","023":"Administración de personal","024":"(sin asignar)","025":"Operaciones bibliotecarias","026":"Bibliotecas para temas específicos","027":"Bibliotecas generales","028":"Lectura y uso de otros medios de información","029":"(sin asignar)","030":"Obras enciclopédicas generales","031":"Lengua inglesa norteamericana","032":"En inglés","033":"En otras lenguas germánicas","034":"En francés, provenzal, catalán","035":"En italiano, rumano, retorromano","036":"En español y portugués","037":"En lenguas eslavas","038":"En lenguas escandinavas","039":"En otras lenguas","040":"(No asignado)","041":"(No asignado)","042":"(No asignado)","043":"(No asignado)","044":"(No asignado)","045":"(No asignado)","046":"(No asignado)","047":"(No asignado)","048":"(No asignado)","049":"(No asignado)","050":"Publicaciones seriadas generales","051":"Lengua inglesa norteamericana","052":"En inglés","053":"En otras lenguas germánicas","054":"En francés, provenzal, catalán","055":"En italiano, rumano, retorromano","056":"En español y portugués","057":"En lenguas eslavas","058":"En lenguas escandinavas","059":"En otras lenguas","060":"Organizaciones generales y museología","061":"En América del Norte","062":"En las Islas Británicas. En Inglaterra","063":"En Europa Central. En Alemania","064":"En Francia y Mónaco","065":"En Italia y territorios adyacentes","066":"En la Península Ibérica e islas adyacentes","067":"En Europa Oriental. En Rusia","068":"En otras áreas geográficas","069":"Museología (Ciencia de los Museos)","070":"Medios noticiosos, periodismo, publicación","071":"Periodismo y periódicos en América del Norte","072":"En las Islas Británicas. En Inglaterra","073":"En Europa Central. En Alemania","074":"En Francia y Mónaco","075":"En Italia y territorios adyacentes","076":"En Península Ibérica e islas adyacentes","077":"En Europa Oriental. En Rusia","078":"En Escandinavia","079":"En otras áreas geográficas","080":"Colecciones generales","081":"Lengua inglesa norteamericana","082":"Colecciones generales en inglés","083":"En otras lenguas germánicas","084":"En francés, provenzal, catalán","085":"En italiano, rumano, retorromano","086":"En español y portugués","087":"En lenguas eslavas","088":"En lenguas escandinavas","089":"En lenguas itálicas, helénicas, otras lenguas","090":"Manuscritos y libros raros","091":"Manuscritos","092":"Libros xilográficos","093":"Incunables","094":"Libros impresos","095":"Libros notables por su encuadernación","096":"Libros notables por las ilustraciones","097":"Libros notables por su propietario u origen","098":"Obras prohibidas, falsificaciones, imposturas","099":"Libros notables por su formato","100":"Filosofía y Psicología","101":"Teoría de la filosofía","102":"Miscelánea","103":"Diccionarios y enciclopedias","104":"(sin asignar)","105":"Publicaciones seriadas","106":"Organizaciones y gerencia","107":"Educación, investigación, temas relacionados","108":"Tratamiento de clases de personas","109":"Tratamiento histórico y colectivo de personas","110":"Metafísica","111":"Ontología","112":"(sin asignar)","113":"Cosmología (Filosofía de la naturaleza)","114":"Espacio","115":"Tiempo","116":"Cambio","117":"Estructura","118":"Fuerza y energía","119":"Número y cantidad","120":"Epistemología, causalidad, género humano","121":"Epistemología (Teoría del conocimiento)","122":"Causalidad","123":"Determinismo e indeterminismo","124":"Teleología","125":"(sin asignar)","126":"El yo","127":"El inconsciente y el subconsciente","128":"Género humano","129":"Origen y destino de las almas individuales","130":"Fenómenos paranormales","131":"Métodos parapsicológicos y ocultos","132":"(sin asignar)","133":"Parapsicología y ocultismo","134":"(sin asignar)","135":"Sueños y misterios","136":"(sin asignar)","137":"Grafología adivinatoria","138":"Fisionomía","139":"Frenología","140":"Escuelas filosóficas específicas","141":"Idealismo y sistemas relacionados","142":"Filosofía crítica","143":"Bergsonismo e intuicionismo","144":"Humanismo y sistemas relacionados","145":"Sensacionalismo","146":"Naturalismo y sistemas relacionados","147":"Panteísmo y sistemas relacionados","148":"Eclecticismo, liberalismo, tradicionalismo","149":"Otros sistemas filosóficos","150":"Psicología","151":"(sin asignar)","152":"Percepción, movimiento, emociones, impulsos","153":"Procesos mentales e inteligencia","154":"Subconsciente y estados alterados","155":"Psicología diferencial y del desarrollo","156":"Psicología comparada","157":"(sin asignar)","158":"Psicología aplicada","159":"(sin asignar)","160":"Lógica","161":"Inducción","162":"Deducción","163":"(sin asignar)","164":"(sin asignar)","165":"Falacias y fuentes de error","166":"Silogismos","167":"Hipótesis","168":"Argumento y persuasión","169":"Analogía","170":"Ética (Filosofía moral)","171":"Sistemas éticos","172":"Ética política","173":"Ética de las relaciones familiares","174":"Ética ocupacional","175":"Ética de la recreación y del tiempo libre","176":"Ética del sexo y la reproducción","177":"Ética de las relaciones sociales","178":"Ética del consumo","179":"Otras normas éticas","180":"Filosofía antigua, medieval, oriental","181":"Filosofía oriental","182":"Filosofías griegas presocráticas","183":"Filosofías sofista y socrática","184":"Filosofía platónica","185":"Filosofía aristotélica","186":"Filosofía escéptica y neoplatónica","187":"Filosofía epicúrea","188":"Filosofía estoica","189":"Filosofía medieval occidental","190":"Filosofía moderna occidental","191":"Filosofía de Estados Unidos y Canadá","192":"Filosofía de las Islas Británicas","193":"Filosofía de Alemania y Austria","194":"Filosofía de Francia","195":"Filosofía de Italia","196":"Filosofía de España y Portugal","197":"Filosofía de la anterior Unión Soviética","198":"Filosofía de Escandinavia","199":"Filosofía de otras áreas geográficas","200":"Religión","201":"(sin asignar)","202":"(sin asignar)","203":"(sin asignar)","204":"(sin asignar)","205":"(sin asignar)","206":"(sin asignar)","207":"(sin asignar)","208":"(sin asignar)","209":"(sin asignar)","210":"Filosofía y teoría de la Religión","211":"Conceptos de Dios","212":"Existencia, sapiencia, atributos de Dios","213":"Creación","214":"Teodicea","215":"Ciencia y Religión","216":"(sin asignar)","217":"(sin asignar)","218":"Género humano","219":"(sin asignar)","220":"La Biblia","221":"Antiguo Testamento (Tanakh)","222":"Libros históricos del Antiguo Testamento","223":"Libros poéticos del Antiguo Testamento","224":"Libros proféticos del Antiguo Testamento","225":"Nuevo Testamento","226":"Evangelios y Hechos de los Apóstoles","227":"Epístolas","228":"Revelación (Apocalipsis)","229":"Apócrifos y seudoepígrafes","230":"Cristianismo. Teología Cristiana","231":"Dios","232":"Jesucristo y su familia","233":"Género humano","234":"Salvación (soteriología y gracia)","235":"Seres espirituales","236":"Escatología","237":"(sin asignar)","238":"Credos y catecismos","239":"Apologética y polémicas","240":"Moral cristiana y teología piadosa","241":"Teología moral","242":"Literatura piadosa","243":"Escritos evangelizadores para individuos","244":"(sin asignar)","245":"(sin asignar)","246":"Uso del arte en el cristianismo","247":"Mobiliario y artículos eclesiásticos","248":"Experiencia, práctica, vida cristianas","249":"Observancias cristianas en la vida familiar","250":"Órdenes cristianas e iglesia local","251":"Predicación (Homilética)","252":"Textos de sermones","253":"Oficio pastoral (Teología pastoral)","254":"Administración de la parroquia","255":"Congregaciones y órdenes religiosas","256":"(sin asignar)","257":"(sin asignar)","258":"(sin asignar)","259":"Atención pastoral de familias y de personas","260":"Teología social y eclesiástica","261":"Teología social","262":"Eclesiología","263":"Días, épocas, lugares de observancia","264":"Culto público","265":"Sacramentos, otros ritos y ritos","266":"Misiones","267":"Asociaciones para trabajo religioso","268":"Educación religiosa","269":"Renovación espiritual","270":"Historia del cristianismo y de la iglesia cristiana","271":"Órdenes religiosas en la historia de la iglesia","272":"Persecuciones en la historia de la iglesia","273":"Controversias y herejías doctrinales","274":"Historia del cristianismo en Europa","275":"Historia del cristianismo en Asia","276":"Historia del cristianismo en África","277":"Historia del cristianismo en América del Norte","278":"Historia del cristianismo en América del Sur","279":"Historia del cristianismo en otras áreas","280":"Confesiones y sectas cristianas","281":"Iglesia temprana e iglesias orientales","282":"Iglesia Católica Romana","283":"Iglesias anglicanas","284":"Protestantes de origen continental","285":"Iglesias presbiterianas, reformadas, congregacionales","286":"Iglesias bautistas, de los Discípulos de Cristo, adventistas","287":"Iglesias metodistas y relacionadas","288":"(sin asignar)","289":"Otras confesiones y sectas","290":"Religión comparada y otras religiones","291":"Religión comparada","292":"Religión clásica (griega y romana)","293":"Religión germánica","294":"Religiones de origen índico","295":"Zoroastrismo (Mazdeísmo, parsismo)","296":"Judaísmo","297":"Islamismo, babismo, fe bahai","298":"(sin asignar)","299":"Otras religiones","300":"Ciencias sociales","301":"Sociología y antropología","302":"Interacción social","303":"Procesos sociales","304":"Factores que afectan el comportamiento social","305":"Grupos sociales","306":"Cultura e instituciones","307":"Comunidades","308":"(sin asignar)","309":"(sin asignar)","310":"Colecciones de estadística general","311":"(sin asignar)","312":"(sin asignar)","313":"(sin asignar)","314":"Estadísticas generales de Europa","315":"Estadísticas generales de Asia","316":"Estadísticas generales de África","317":"Estadísticas generales de América del Norte","318":"Estadísticas generales de América del Sur","319":"Estadísticas generales de otras áreas","320":"Ciencia política","321":"Sistemas de gobiernos y de estados","322":"Relación del estado con grupos organizados","323":"Derechos civiles y políticos","324":"El proceso político","325":"Migración y colonización internacionales","326":"Esclavitud y emancipación","327":"Relaciones internacionales","328":"El proceso legislativo","329":"(sin asignar)","330":"Economía","331":"Economía laboral","332":"Economía financiera","333":"Economía de la tierra y de la energía","334":"Cooperativas","335":"Socialismo y sistemas relacionados","336":"Finanzas públicas","337":"Economía internacional","338":"Producción","339":"Macroeconomía y temas relacionados","340":"Derecho","341":"Derecho internacional","342":"Derecho constitucional y administrativo","343":"Derecho militar, tributario, mercantil, industrial","344":"Derecho laboral, social, educativo, cultural","345":"Derecho penal","346":"Derecho privado","347":"Procedimiento y tribunales civiles","348":"Leyes (Estatutos), reglamentaciones, jurisprudencia","349":"Derecho de jurisdicciones y áreas específicas","350":"Administración pública y ciencia militar","351":"Administración pública","352":"Consideraciones generales","353":"Campos específicos de administración pública","354":"Administración de la economía y del medio ambiente","355":"Ciencia militar","356":"Fuerzas y combate de infantería","357":"Fuerzas y combate montados","358":"Fuerzas aéreas y otras fuerzas especializadas","359":"Fuerzas y combate marítimos (navales)","360":"Problemas y servicios sociales; asociaciones","361":"Problemas y bienestar sociales en general","362":"Problemas y servicios de bienestar social","363":"Otros problemas y servicios sociales","364":"Criminología","365":"Instituciones penales y relacionadas","366":"Asociaciones","367":"Clubes de carácter general","368":"Seguros","369":"Clases varias de asociaciones","370":"Educación","371":"Escuelas y actividades; educación especial","372":"Educación primaria","373":"Educación secundaria","374":"Educación de adultos","375":"Currículos","376":"(sin asignar)","377":"(sin asignar)","378":"Educación superior","379":"Asuntos de política pública en educación","380":"Comercio, comunicaciones, transporte","381":"Comercio interno (Comercio doméstico)","382":"Comercio internacional (Comercio exterior)","383":"Comunicación postal","384":"Comunicaciones. Telecomunicación","385":"Transporte ferroviario","386":"Transporte por vía acuática interior y en transbordador","387":"Transporte acuático, aéreo, espacial","388":"Transporte. Transporte terrestre","389":"Metrología y estandarización","390":"Costumbres, etiqueta, folclore","391":"Traje y apariencia personal","392":"Costumbres del ciclo de vida y de la vida doméstica","393":"Costumbres mortuorias","394":"Costumbres generales","395":"Etiquetas (Modales)","396":"(sin asignar)","397":"(sin asignar)","398":"Folclore","399":"Costumbres de guerra y diplomática","400":"Lenguas","401":"Filosofía y teoría","402":"Miscelánea","403":"Diccionarios y enciclopedias","404":"Temas especiales","405":"Publicaciones seriadas","406":"Organizaciones y gerencia","407":"Educación, investigación, temas relacionados","408":"Tratamiento de clases de personas","409":"Tratamiento geográfico y de personas","410":"Lingüística","411":"Sistemas de escritura","412":"Etimología","413":"Diccionarios","414":"Fonología y fonética","415":"Gramática","416":"(sin asignar)","417":"Dialectología y lingüística histórica","418":"Uso estándar. Lingüística aplicada","419":"Lenguaje verbal no hablado ni escrito","420":"Inglés e inglés antiguo","421":"Sistemas de escritura y fonología ingleses","422":"Etimología inglesa","423":"Diccionarios de inglés","424":"(sin asignar)","425":"Gramática inglesa","426":"(sin asignar)","427":"Variaciones de la lengua inglesa","428":"Uso del inglés estándar","429":"Inglés antiguo (Anglosajón)","430":"Lenguas germánicas. Alemán","431":"Sistemas de escritura y fonología alemanes","432":"Etimología alemana","433":"Diccionarios de alemán","434":"(sin asignar)","435":"Gramática alemana","436":"(sin asignar)","437":"Variaciones de la lengua alemana","438":"Uso del alemán estándar","439":"Otras lenguas germánicas","440":"Lenguas romances. Francés","441":"Sistemas de escritura y fonología franceses","442":"Etimología francesa","443":"Diccionarios de francés","444":"(sin asignar)","445":"Gramática francesa","446":"(sin asignar)","447":"Variaciones de la lengua francesa","448":"Uso del francés estándar","449":"Provenzal y catalán","450":"Italiano, rumano, retorromano","451":"Sistema de escritura y fonología italianos","452":"Etimología italiana","453":"Diccionario de italiano","454":"(sin asignar)","455":"Gramática italiana","456":"(sin asignar)","457":"Variaciones de la lengua italiana","458":"Uso del italiano estándar","459":"Rumano y retorromano","460":"Lenguas española y portuguesa","461":"Sistemas de escritura y fonología españoles","462":"Etimología española","463":"Diccionario de español","464":"(sin asignar)","465":"Gramática española","466":"(sin asignar)","467":"Variaciones de la lengua española","468":"Uso del español estándar","469":"Portugués","470":"Lenguas itálicas. Latín","471":"Escritura y fonología latinas clásicas","472":"Etimología latina clásica","473":"Diccionarios de latín clásico","474":"(sin asignar)","475":"Gramática latina clásica","476":"(sin asignar)","477":"Latín antiguo, posclásico, vulgar","478":"Uso del latín clásico","479":"Otras lenguas itálicas","480":"Lenguas helénicas. Griego clásico","481":"Escritura y fonología griegas clásicas","482":"Etimología griega clásica","483":"Diccionarios de griego clásico","484":"(sin asignar)","485":"Gramática griega clásica","486":"(sin asignar)","487":"Griego preclásico y posclásico","488":"Uso del griego clásico","489":"Otras lenguas helénicas","490":"Otras lenguas","491":"Lenguas indoeuropeas orientales y célticas","492":"Lenguas afroasiáticas. Semíticas","493":"Lenguas afroasiáticas no semíticas","494":"Lenguas altaicas, urálicas, hiperbóreas, dravídicas","495":"Lenguas del Asia oriental y sudoriental","496":"Lenguas africanas","497":"Lenguas nativas norteamericanas","498":"Lenguas nativas sudamericanas","499":"Lenguas austronesias y otras","500":"Ciencias naturales y matemáticas","501":"Filosofía y teoría","502":"Miscelánea","503":"Diccionarios y enciclopedias","504":"(sin asignar)","505":"Publicaciones seriadas","506":"Organización y gerencia","507":"Educación, investigación, temas relacionados","508":"Historia natural","509":"Tratamiento histórico, geográfico, de personas","510":"Matemáticas","511":"Principios generales de las matemáticas","512":"Álgebra, teoría de los números","513":"Aritmética","514":"Topología","515":"Análisis","516":"Geometría","517":"(sin asignar)","518":"(sin asignar)","519":"Probabilidades y matemáticas aplicadas","520":"Astronomía y ciencias afines","521":"Mecánica celeste","522":"Técnicas, equipo, materiales","523":"Cuerpos y fenómenos celestes específicos","524":"(sin asignar)","525":"La tierra (Geografía astronómica)","526":"Geografía matemática","527":"Navegación celeste","528":"Efemérides","529":"Cronología","530":"Física","531":"Mecánica clásica. Mecánica de sólidos","532":"Mecánica de fluidos. Mecánica de líquidos","533":"Neumática (Mecánica de gases)","534":"Sonido y vibraciones relacionadas","535":"Luz y fenómenos parafóticos","536":"Calor","537":"Electricidad y electrónica","538":"Magnetismo","539":"Física moderna","540":"Química y ciencias afines","541":"Química física y teórica","542":"Técnicas, equipo, materiales","543":"Química analítica","544":"Análisis cualitativo","545":"Análisis cuantitativo","546":"Química inorgánica","547":"Química orgánica","548":"Cristalografía","549":"Mineralogía","550":"Ciencias de la tierra","551":"Geología, hidrología, meteorología","552":"Petrología","553":"Geología económica","554":"Ciencias de la tierra de Europa","555":"Ciencias de la tierra de Asia","556":"Ciencias de la tierra de África","557":"Ciencias de la tierra de América del Norte","558":"Ciencias de la tierra de América del Sur","559":"Ciencias de la tierra de otras áreas","560":"Paleontología. Paleozoología","561":"Paleobotánica; microorganismos fósiles","562":"Invertebrados fósiles","563":"Otros invertebrados fósiles","564":"Mollusca (Moluscos) y Molluscoidea (Moluscoideos) fósiles","565":"Arthropoda (Artrópodos) fósiles","566":"Chordata (Cordados) fósiles","567":"Vertebrados fósiles de sangre fría","568":"Aves (Pájaros) fósiles","569":"Mammalia (Mamíferos) fósiles","570":"Ciencias de la vida. Biología","571":"Fisiología y temas relacionados","572":"Bioquímica","573":"Sistemas específicos en animales","574":"(sin asignar)","575":"Partes específicas de y sistemas en plantas","576":"Genética y evolución","577":"Ecología","578":"Historia natural de los organismos","579":"Microorganismos, hongos, algas","580":"Plantas","581":"Temas específicos en historia natural","582":"Plantas destacadas por características y flores","583":"Magnoliosida (Dicotiledóneas)","584":"Liliopsida (Monocotiledóneas)","585":"Pinophyta (Gimnospermas). Coniferales (Coníferas)","586":"Cryptogamia (Criptógamas, Plantas sin semillas)","587":"Pteridophyta (Pteridofitas, Plantas vasculares sin semillas)","588":"Bryophyta (Briofitas)","589":"(sin asignar)","590":"Animales","591":"Temas específicos en historia natural","592":"Invertebrados","593":"Invertebrados marinos y del litoral","594":"Mollusca (Moluscos) y Molluscoidea (Moluscoideos)","595":"Arthropoda (Artrópodos)","596":"Chordata (Cordados)","597":"Vertebrados de sangre fría. Pisces (Peces)","598":"Aves (Pájaros)","599":"Mammalia (Mamíferos)","600":"Tecnología (Ciencias aplicadas)","601":"Filosofía y teoría","602":"Miscelánea","603":"Diccionarios y enciclopedias","604":"Temas especiales","605":"Publicaciones seriadas","606":"Organizaciones","607":"Educación, investigación, temas relacionados","608":"Invenciones y patentes","609":"Tratamiento histórico, geográfico de personas","610":"Ciencias médicas. Medicina","611":"Anatomía humana, citología, histología","612":"Fisiología humana","613":"Promoción de la salud","614":"Incidencia y prevención de la enfermedad","615":"Farmacología y terapéutica","616":"Enfermedades","617":"Cirugía y especialidades médicas relacionadas","618":"Ginecología y otras especialidades médicas","619":"Medicina experimental","620":"Ingeniería y operaciones afines","621":"Física aplicada","622":"Minería y operaciones relacionadas","623":"Ingeniería militar y náutica","624":"Ingeniería civil","625":"Ingeniería de ferrocarriles y de carretera","626":"(sin asignar)","627":"Ingeniería hidráulica","628":"Ingeniería sanitaria y municipal","629":"Otras ramas de la ingeniería","630":"Agricultura y tecnologías relacionadas","631":"Técnicas, equipo, materiales","632":"Lesiones, enfermedades, plagas vegetales","633":"Cultivos de campo y de plantación","634":"Huertos, frutas, silvicultura","635":"Cultivos hortícolas (Horticultura)","636":"Producción animal (Zootecnia)","637":"Procesamiento lechero y productos relacionados","638":"Cultivo de insectos","639":"Caza, pesca, conservación","640":"Economía doméstica y vida familiar","641":"Alimentos y bebidas","642":"Comidas y servicios a la mesa","643":"Vivienda y equipo de la casa","644":"Servicios de la casa","645":"Dotaciones de la casa","646":"Costura, vestuario, vida personal","647":"Gerencia de viviendas públicas","648":"Cuidado de la casa","649":"Crianza de niños y atención domiciliaria de personas","650":"Gerencia y servicios auxiliares","651":"Servicios de oficina","652":"Procesos de comunicación escrita","653":"Taquigrafía","654":"(sin asignar)","655":"(sin asignar)","656":"(sin asignar)","657":"Contabilidad","658":"Gerencia general","659":"Publicidad","660":"Ingeniería química","661":"Tecnología de químicos industriales","662":"Explosivos, combustibles, productos relacionados","663":"Tecnología de bebidas","664":"Tecnología de alimentos","665":"Aceites, grasas, ceras, gases industriales","666":"Cerámica y tecnologías afines","667":"Tecnología de la limpieza, del color, del revestimiento","668":"Tecnología de otros productos orgánicos","669":"Metalurgia","670":"Manufactura","671":"Metalistería y productos metálicos","672":"Hierro, acero, otras aleaciones ferrosas","673":"Metales no ferrosos","674":"Procesamiento de madera aserrada, productos de madera, corchos","675":"Procesamiento del cuero y de la piel","676":"Tecnología de la pulpa y del papel","677":"Textiles","678":"Elastómeros y productos elastoméricos","679":"Otros productos de materiales específicos","680":"Manufactura para usos específicos","681":"Instrumentos de precisión y otros dispositivos","682":"Trabajo de forja pequeña (Herrería)","683":"Ferretería y aparatos de la casa","684":"Muebles y talleres de hogar","685":"Artículos de cuero, de piel, productos relacionados","686":"Imprenta y actividades relacionadas","687":"Vestuario y accesorios","688":"Otros productos acabados y empaques","689":"(sin asignar)","690":"Construcción","691":"Materiales de construcción","692":"Prácticas auxiliares de construcción","693":"Materiales y propósitos específicos","694":"Construcción en madera. Carpintería","695":"Cubiertas para techos","696":"Servicios públicos","697":"Calefacción, ventilación, aire acondicionado","698":"Acabado detallado","699":"(sin asignar)","700":"Las artes. Bellas artes y artes decorativas","701":"Filosofía de las bellas artes y artes decorativas","702":"Miscelánea de las bellas artes y artes decorativas","703":"Diccionarios de las bellas artes y artes decorativas","704":"Temas especiales de las bellas artes y artes decorativas","705":"Publicaciones seriadas de las bellas artes y artes decorativas","706":"Organizaciones y gerencia","707":"Educación, investigación, temas relacionados","708":"Galerías, museos, colecciones privadas","709":"Tratamiento histórico, geográfico, de personas","710":"Urbanismo y arte paisajístico","711":"Planificación del espacio (Urbanismo)","712":"Arquitectura paisajística","713":"Arquitectura paisajística de las vías de tráfico","714":"Elementos acuáticos","715":"Plantas leñosas","716":"Plantas herbáceas","717":"Estructuras en arquitectura paisajística","718":"Diseño paisajístico de cementerios","719":"Paisajes naturales","720":"Arquitectura","721":"Estructura arquitectónica","722":"Arquitectura hasta ca. 300","723":"Arquitectura desde ca. 300 hasta 1399","724":"Arquitectura desde 1400","725":"Estructuras públicas","726":"Edificios para propósitos religiosos","727":"Edificios para educación e investigación","728":"Edificios residenciales y relacionados","729":"Diseño y decoración","730":"Artes plásticas. Escultura","731":"Procesos, formas, temas de la escultura","732":"Escultura hasta ca. 500","733":"Escultura griega, etrusca, romana","734":"Escultura desde ca. 500 hasta 1399","735":"Escultura desde 1400","736":"Talla y tallados","737":"Numismática y sigilografía","738":"Artes cerámicas","739":"Metalistería artística","740":"Dibujo y artes decorativas","741":"Dibujo y dibujos","742":"Perspectiva","743":"Dibujo y dibujos por tema","744":"(sin asignar)","745":"Artes decorativas","746":"Artes textiles","747":"Decoración de interiores","748":"Vidrio","749":"Muebles y accesorios","750":"Pintura y pinturas","751":"Técnicas, equipo, materiales, formas","752":"Color","753":"Simbolismo, alegoría, mitología, leyenda","754":"Pintura de género","755":"Religión","756":"(sin asignar)","757":"Figuras humanas","758":"Otros temas","759":"Tratamiento histórico, geográfico, de personas","760":"Artes gráficas. Arte de grabar y grabados","761":"Procesos en relieve (impresión de planchas de madera)","762":"(sin asignar)","763":"Procesos litográficos (planográficos)","764":"Cromolitografía y serigrafía","765":"Grabado en metal","766":"Media tinta, aguatinta, procesos relacionados","767":"Aguafuerte, grabados a punta seca","768":"(sin asignar)","769":"Grabados","770":"Fotografía y fotografías","771":"Técnicas, equipo y materiales","772":"Procesos con sales metálicas","773":"Procesos de pigmentación de la impresión","774":"Holografía","775":"(sin asignar)","776":"(sin asignar)","777":"(sin asignar)","778":"Campos y clases de fotografía","779":"Fotografías","780":"Música","781":"Principios generales y formas musicales","782":"Música vocal","783":"Música para voces individuales. La voz","784":"Instrumentos y conjuntos instrumentales","785":"Conjuntos con un solo instrumento por parte","786":"Instrumentos de teclado y otros","787":"Instrumentos de cuerda (Cordófonos)","788":"Instrumentos de viento (Aerófonos)","789":"(sin asignar)","790":"Artes recreativas y de la actualización","791":"Representaciones públicas","792":"Presentaciones escénicas","793":"Juegos y diversiones bajo techo","794":"Juegos de destreza bajo techo","795":"Juegos de suerte","796":"Deportes y juegos atléticos y al aire libre","797":"Deportes acuáticos y aéreos","798":"Deportes ecuestres y carreras de animales","799":"Pesca, caza, tiro","800":"Literatura y retórica","801":"Filosofía y teoría","802":"Miscelánea","803":"Diccionarios y enciclopedias","804":"(sin asignar)","805":"Publicaciones seriadas","806":"Organizaciones y gerencia","807":"Educación, investigación, temas relacionados","808":"Retórica y colecciones de literatura","809":"Historia, descripción, crítica","810":"Literatura norteamericana en inglés","811":"Poesía norteamericana en inglés","812":"Teatro norteamericano en inglés","813":"Novelística norteamericana en inglés","814":"Ensayos norteamericanos en inglés","815":"Discursos norteamericanos en inglés","816":"Cartas norteamericanas en inglés","817":"Humor y sátira norteamericanos en inglés","818":"Escritos varios norteamericanos","819":"(sin asignar)","820":"Literatura inglesa e inglesa antigua","821":"Poesía inglesa","822":"Teatro inglés","823":"Novelística inglesa","824":"Ensayos ingleses","825":"Discursos ingleses","826":"Cartas inglesas","827":"Humor y sátira ingleses","828":"Escritos varios ingleses","829":"Literatura inglesa antigua (anglosajona)","830":"Literatura de las lenguas germánicas","831":"Poesía alemana","832":"Teatro alemán","833":"Novelística alemana","834":"Ensayos alemanes","835":"Discursos alemanes","836":"Cartas alemanas","837":"Humor y sátira alemanes","838":"Escritos varios alemanes","839":"Otras literaturas germánicas","840":"Literatura de las lenguas romances","841":"Poesía francesa","842":"Teatro francés","843":"Novelística francesa","844":"Ensayos franceses","845":"Discursos franceses","846":"Cartas francesas","847":"Humor y sátira franceses","848":"Escritos varios franceses","849":"Literaturas provenzal y catalana","850":"Literaturas italiana, rumana, retorromana","851":"Poesía italiana","852":"Teatro italiano","853":"Novelística italiana","854":"Ensayos italianos","855":"Discursos italianos","856":"Cartas italianas","857":"Humor y sátira italianos","858":"Escritos varios italianos","859":"Literatura portuguesa (transición)","860":"Literatura española y portuguesa","861":"Poesía española","862":"Teatro español","863":"Novelística española","864":"Ensayos españoles","865":"Discursos españoles","866":"Cartas españolas","867":"Humor y sátira españoles","868":"Escritos varios españoles","869":"Literatura portuguesa","870":"Literaturas itálicas. Literatura latina","871":"Poesía latina","872":"Poesía y teatro dramáticos latinos","873":"Poesía y novelística épicas latinas","874":"Poesía lírica latina","875":"Discursos latinos","876":"Cartas latinas","877":"Humor y sátira latinos","878":"Escritos varios latinos","879":"Literaturas de otras lenguas itálicas","880":"Literaturas helénicas. Literatura griega clásica","881":"Poesía griega clásica","882":"Poesía y teatro dramáticos griegos clásicos","883":"Poesía y novelística épicas griegas clásicas","884":"Poesía lírica griega clásica","885":"Discursos griegos clásicos","886":"Cartas griegas clásicas","887":"Humor y sátira griegos clásicos","888":"Escritos varios griegos clásicos","889":"Literatura griega moderna","890":"Literaturas de otras lenguas","891":"Indoeuropeas, orientales y célticas","892":"Afroasiáticas. Semíticas","893":"Afroasiáticas no semíticas","894":"Altaicas, urálicas, hiperbóreas, dravídicas","895":"Del Asia oriental y sudoriental","896":"Africanas","897":"Nativas norteamericanas","898":"Nativas sudamericanas","899":"Austronesias y otras","900":"Geografía e historia","901":"Filosofía y teoría","902":"Miscelánea","903":"Diccionarios y enciclopedias","904":"Relatos colectivos de acontecimientos","905":"Publicaciones seriadas","906":"Organizaciones y gerencia","907":"Educación, investigación, temas relacionados","908":"Tratamiento de clases de personas","909":"Historia universal","910":"Geografía y viajes","911":"Geografía histórica","912":"Representaciones gráficas","913":"Geografía de y viajes en el mundo antiguo","914":"Geografía de y viajes en Europa","915":"Geografía de y viajes en Asia","916":"Geografía de y viajes en África","917":"Geografía de y viajes en América del Norte","918":"Geografía de y viajes en América del Sur","919":"Geografía de y viajes en otras áreas","920":"Biografía, genealogía, insignias","921":"(sin asignar)","922":"(sin asignar)","923":"(sin asignar)","924":"(sin asignar)","925":"(sin asignar)","926":"(sin asignar)","927":"(sin asignar)","928":"(sin asignar)","929":"Biografía, nombres, insignias","930":"Historia del mundo antiguo hasta ca. 499","931":"China hasta 420","932":"Egipto hasta 640","933":"Palestina hasta 70","934":"India hasta 647","935":"Mesopotamia y Meseta Iraní hasta 637","936":"Europa al norte y al occidente de Italia hasta ca. 499","937":"Italia y territorios adyacentes hasta 476","938":"Grecia hasta 323","939":"Otras partes del mundo antiguo hasta 640","940":"Historia general de Europa","941":"Islas Británicas","942":"Inglaterra y Gales","943":"Europa central. Alemania","944":"Francia y Mónaco","945":"Península Itálica e islas adyacentes","946":"Península Ibérica e islas adyacentes","947":"Europa Oriental. Rusia","948":"Escandinavia","949":"Otras partes de Europa","950":"Historia general de Asia. Lejano Oriente","951":"China y áreas adyacentes","952":"Japón","953":"Península de Arabia y áreas adyacentes","954":"Asia del Sur. India","955":"Irán","956":"Medio Oriente (Cercano Oriente)","957":"Siberia (Rusia asiática)","958":"Asia Central","959":"Asia Sudoriental","960":"Historia general de África","961":"Túnez y Libia","962":"Egipto y Sudán","963":"Etiopía y Eritrea","964":"Costa noroccidental africana e islas cercanas","965":"Argelia","966":"África occidental e islas cercanas","967":"África central e islas cercanas","968":"África del Sur. República de Sudáfrica","969":"Islas del Océano Índico Sur","970":"Historia general de América del Norte","971":"Canadá","972":"Mesoamérica (América Media). México","973":"Estados Unidos","974":"Nororiente de Estados Unidos","975":"Sudoriente de Estados Unidos","976":"Centro-sur de Estados Unidos","977":"Centro-norte de Estados Unidos","978":"Occidente de Estados Unidos","979":"Región de la Gran Cuenca y de la Vertiente del Pacífico","980":"Historia general de América del Sur","981":"Brasil","982":"Argentina","983":"Chile","984":"Bolivia","985":"Perú","986":"Colombia y Ecuador","987":"Venezuela","988":"Guayanas","989":"Paraguay y Uruguay","990":"Historia general de otras áreas","991":"(sin asignar)","992":"(sin asignar)","993":"Nueva Zelanda","994":"Australia","995":"Melanesia. Nueva Guinea","996":"Otras partes del Océano Pacífico. Polinesia","997":"Islas del Océano Atlántico","998":"Islas árticas y Antártida","999":"Mundos extraterrestres"}
+;
+
+const CLASS_NAMES = {
+  "000":"Generalidades","100":"Filosofía y Psicología","200":"Religión",
+  "300":"Ciencias sociales","400":"Lenguas","500":"Ciencias naturales y matemáticas",
+  "600":"Tecnología","700":"Las artes","800":"Literatura y retórica","900":"Geografía e historia"
+};
+
+/* ---------------- Cutter ---------------- */
+function buildMap(explicit){
+  const map = {};
+  let last = 2;
+  for(let c=97;c<=122;c++){
+    const ch = String.fromCharCode(c);
+    if(explicit[ch]!==undefined){ last = explicit[ch]; }
+    map[ch] = last;
+  }
+  return map;
+}
+const VOWEL_MAP = buildMap({b:2,d:3,l:4,m:4,n:5,p:6,r:7,s:8,t:8,u:9,y:9});
+const S_MAP = buildMap({a:2,c:3,e:4,h:5,i:5,m:6,p:6,t:7,u:8,w:9});
+const QU_MAP = buildMap({a:3,e:4,i:5,o:6,r:7,t:8,y:9});
+const OTHER_MAP = buildMap({a:3,e:4,i:5,o:6,r:7,u:8,y:9});
+const EXP_MAP = buildMap({a:3,e:4,i:5,m:6,p:7,t:8,w:9});
+
+function stripAccents(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ñ/gi, m => m==='ñ'?'n':'N');
+}
+
+function computeCutter(rawSurname){
+  const clean = stripAccents(rawSurname||'').toUpperCase().replace(/[^A-Z]/g,'');
+  if(!clean) return '';
+  const letter1 = clean[0];
+  const restRaw = clean.slice(1).toLowerCase();
+  let baseDigits, consumed;
+  const isVowel = 'AEIOU'.includes(letter1);
+  if(isVowel){
+    baseDigits = String(VOWEL_MAP[restRaw[0]||'a']);
+    consumed = restRaw[0] ? 1 : 0;
+  } else if(letter1==='S'){
+    baseDigits = String(S_MAP[restRaw[0]||'a']);
+    consumed = restRaw[0] ? 1 : 0;
+  } else if(letter1==='Q'){
+    if(restRaw[0]==='u'){
+      baseDigits = String(QU_MAP[restRaw[1]||'a']);
+      consumed = 1 + (restRaw[1] ? 1 : 0);
+    } else {
+      const a = 97, t = 116;
+      const c = Math.min(Math.max((restRaw[0]||'a').charCodeAt(0), a), t);
+      const val = 2 + Math.round((c-a)/(t-a)*27);
+      baseDigits = String(val);
+      consumed = restRaw[0] ? 1 : 0;
+    }
+  } else {
+    baseDigits = String(OTHER_MAP[restRaw[0]||'a']);
+    consumed = restRaw[0] ? 1 : 0;
+  }
+  const remaining = restRaw.slice(consumed);
+  let extra = '';
+  for(let i=0;i<2 && i<remaining.length;i++){
+    extra += String(EXP_MAP[remaining[i]]);
+  }
+  return letter1 + baseDigits + extra;
+}
+
+/* ---------------- Dewey combobox ---------------- */
+const deweySearch = document.getElementById('deweySearch');
+const deweyResults = document.getElementById('deweyResults');
+const deweyChip = document.getElementById('deweyChip');
+const deweyChipNum = document.getElementById('deweyChipNum');
+const deweyChipDesc = document.getElementById('deweyChipDesc');
+const deweyChipPath = document.getElementById('deweyChipPath');
+const classChips = document.getElementById('classChips');
+
+let selectedDewey = null; // {num, desc}
+let activeIndex = -1;
+
+function classOf(num){ return num[0]+'00'; }
+
+Object.keys(CLASS_NAMES).forEach(k=>{
+  const chip = document.createElement('span');
+  chip.className = 'class-chip';
+  chip.textContent = k+' '+CLASS_NAMES[k];
+  chip.addEventListener('click', ()=>{
+    deweySearch.value = k+' ';
+    renderResults(k, true);
+    deweySearch.focus();
+  });
+  classChips.appendChild(chip);
+});
+
+function renderResults(query, forceClassBrowse){
+  const q = query.trim().toLowerCase();
+  let matches = [];
+  if(!q){
+    deweyResults.classList.remove('open');
+    deweyResults.innerHTML='';
+    return;
+  }
+  const isNumeric = /^\d+$/.test(q);
+  for(const num in DEWEY){
+    const desc = DEWEY[num];
+    if(forceClassBrowse){
+      if(classOf(num)===q.slice(0,3) || num.startsWith(q.trim())){
+        matches.push([num,desc]);
+      }
+      continue;
+    }
+    if(isNumeric){
+      if(num.startsWith(q)) matches.push([num,desc]);
+    } else {
+      if(desc.toLowerCase().includes(q)) matches.push([num,desc]);
+    }
+  }
+  matches = matches.filter(([n,d]) => !d.startsWith('(sin asignar') && !d.startsWith('(No asignado'));
+  matches = matches.slice(0,40);
+  if(matches.length===0){
+    deweyResults.innerHTML = '<div class="combo-item" style="cursor:default;color:var(--ink-soft);font-style:italic;">Sin coincidencias</div>';
+    deweyResults.classList.add('open');
+    return;
+  }
+  deweyResults.innerHTML = matches.map(([num,desc],i)=>{
+    const cls = classOf(num);
+    const path = cls===num ? 'Clase principal' : (cls+' '+CLASS_NAMES[cls]);
+    return `<div class="combo-item" data-num="${num}" data-idx="${i}">
+      <span class="num">${num}</span>
+      <span><span>${desc}</span><span class="path">${path}</span></span>
+    </div>`;
+  }).join('');
+  activeIndex = -1;
+  deweyResults.classList.add('open');
+}
+
+deweySearch.addEventListener('input', ()=> renderResults(deweySearch.value, false));
+deweySearch.addEventListener('focus', ()=> { if(deweySearch.value.trim()) renderResults(deweySearch.value,false); });
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.combo')) deweyResults.classList.remove('open');
+});
+deweyResults.addEventListener('click', (e)=>{
+  const item = e.target.closest('.combo-item[data-num]');
+  if(!item) return;
+  chooseDewey(item.dataset.num);
+});
+deweySearch.addEventListener('keydown', (e)=>{
+  const items = Array.from(deweyResults.querySelectorAll('.combo-item[data-num]'));
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); activeIndex=Math.min(activeIndex+1, items.length-1); updateActive(items); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); activeIndex=Math.max(activeIndex-1,0); updateActive(items); }
+  else if(e.key==='Enter'){ e.preventDefault(); if(activeIndex>=0) chooseDewey(items[activeIndex].dataset.num); }
+  else if(e.key==='Escape'){ deweyResults.classList.remove('open'); }
+});
+function updateActive(items){
+  items.forEach(it=>it.classList.remove('active'));
+  if(items[activeIndex]){ items[activeIndex].classList.add('active'); items[activeIndex].scrollIntoView({block:'nearest'}); }
+}
+
+function chooseDewey(num){
+  selectedDewey = {num, desc: DEWEY[num]};
+  deweySearch.value = '';
+  deweyResults.classList.remove('open');
+  deweyChip.classList.add('show');
+  deweyChipNum.textContent = num;
+  deweyChipDesc.textContent = DEWEY[num];
+  const cls = classOf(num);
+  deweyChipPath.textContent = cls===num ? '' : (' · '+cls+' '+CLASS_NAMES[cls]);
+  update();
+}
+
+/* ---------------- Form state / preview ---------------- */
+const surnameInput = document.getElementById('surname');
+const cutterOut = document.getElementById('cutterOut');
+const editCutterBtn = document.getElementById('editCutterBtn');
+const yearInput = document.getElementById('year');
+const hasVol = document.getElementById('hasVol');
+const volNum = document.getElementById('volNum');
+const deweyExt = document.getElementById('deweyExt');
+const titleField = document.getElementById('titleField');
+
+let cutterManual = false;
+
+surnameInput.addEventListener('input', ()=>{
+  if(!cutterManual){ cutterOut.value = computeCutter(surnameInput.value); }
+  update();
+});
+cutterOut.addEventListener('input', ()=>{ update(); });
+editCutterBtn.addEventListener('click', ()=>{
+  cutterManual = !cutterManual;
+  cutterOut.readOnly = !cutterManual;
+  editCutterBtn.textContent = cutterManual ? 'auto' : 'editar';
+  if(!cutterManual){ cutterOut.value = computeCutter(surnameInput.value); update(); }
+  if(cutterManual) cutterOut.focus();
+});
+cutterOut.readOnly = true;
+
+yearInput.addEventListener('input', ()=>{
+  yearInput.value = yearInput.value.replace(/[^0-9]/g,'').slice(0,4);
+  update();
+});
+hasVol.addEventListener('change', ()=>{
+  volNum.style.display = hasVol.checked ? 'block' : 'none';
+  if(!hasVol.checked) volNum.value='';
+  update();
+});
+volNum.addEventListener('input', ()=>{
+  volNum.value = volNum.value.replace(/[^0-9]/g,'');
+  update();
+});
+deweyExt.addEventListener('input', ()=> update());
+
+function buildDeweyCode(){
+  if(!selectedDewey) return '';
+  let code = selectedDewey.num;
+  const ext = deweyExt.value.trim().replace(/^\.+/,'');
+  if(ext) code += '.'+ext;
+  return code;
+}
+
+function buildSignature(){
+  const dewey = buildDeweyCode();
+  const cutter = cutterOut.value.trim();
+  const year = yearInput.value.trim();
+  const vol = hasVol.checked ? volNum.value.trim() : '';
+  if(!dewey && !cutter && !year) return '';
+  const parts = [];
+  if(dewey) parts.push(dewey + (cutter ? '.'+cutter : ''));
+  else if(cutter) parts.push(cutter);
+  if(year) parts.push(year);
+  let sig = parts.join('.');
+  if(vol) sig += '.v.'+vol;
+  return sig;
+}
+
+function update(){
+  document.getElementById('fDewey').textContent = buildDeweyCode() || '—';
+  document.getElementById('fMateria').textContent = selectedDewey ? selectedDewey.desc : '—';
+  document.getElementById('fCutter').textContent = cutterOut.value || '—';
+  document.getElementById('fAno').textContent = yearInput.value || '—';
+  document.getElementById('fVol').textContent = hasVol.checked && volNum.value ? volNum.value : '—';
+
+  const sig = buildSignature();
+  document.getElementById('sigBig').textContent = sig || '—';
+
+  document.getElementById('spDewey').textContent = buildDeweyCode() || '—';
+  document.getElementById('spCutter').textContent = cutterOut.value || '—';
+  document.getElementById('spYear').textContent = yearInput.value || '';
+  document.getElementById('spVol').textContent = (hasVol.checked && volNum.value) ? ('Vol. '+volNum.value) : '';
+}
+
+document.getElementById('copySig').addEventListener('click', ()=>{
+  const sig = buildSignature();
+  if(!sig) return;
+  navigator.clipboard.writeText(sig).then(()=>{
+    const btn = document.getElementById('copySig');
+    const old = btn.textContent;
+    btn.textContent = 'Copiado';
+    setTimeout(()=>btn.textContent=old, 1400);
+  });
+});
+
+/* ---------------- Ledger (batch) ---------------- */
+const ledgerBody = document.getElementById('ledgerBody');
+let ledger = [];
+
+function renderLedger(){
+  if(ledger.length===0){
+    ledgerBody.innerHTML = '<tr class="empty-row"><td colspan="8">Aún no ha añadido ninguna obra.</td></tr>';
+    return;
+  }
+  ledgerBody.innerHTML = ledger.map((r,i)=>`
+    <tr>
+      <td>${r.title || '<span style="color:var(--ink-soft);font-style:italic;">Sin título</span>'}</td>
+      <td>${r.surname||'—'}</td>
+      <td>${r.dewey||'—'}</td>
+      <td>${r.cutter||'—'}</td>
+      <td>${r.year||'—'}</td>
+      <td>${r.vol||'—'}</td>
+      <td class="sig-cell">${r.sig}</td>
+      <td><button class="mini-btn" data-del="${i}">quitar</button></td>
+    </tr>
+  `).join('');
+}
+ledgerBody.addEventListener('click', (e)=>{
+  const b = e.target.closest('[data-del]');
+  if(!b) return;
+  ledger.splice(Number(b.dataset.del),1);
+  renderLedger();
+});
+
+document.getElementById('addToLedger').addEventListener('click', ()=>{
+  const sig = buildSignature();
+  if(!sig){ deweySearch.focus(); return; }
+  ledger.push({
+    title: titleField.value.trim(),
+    surname: surnameInput.value.trim(),
+    dewey: buildDeweyCode(),
+    cutter: cutterOut.value.trim(),
+    year: yearInput.value.trim(),
+    vol: hasVol.checked ? volNum.value.trim() : '',
+    sig
+  });
+  renderLedger();
+});
+
+document.getElementById('clearForm').addEventListener('click', ()=>{
+  selectedDewey = null;
+  deweyChip.classList.remove('show');
+  deweySearch.value=''; deweyExt.value=''; surnameInput.value=''; cutterOut.value='';
+  yearInput.value=''; hasVol.checked=false; volNum.value=''; volNum.style.display='none';
+  titleField.value='';
+  cutterManual=false; cutterOut.readOnly=true; editCutterBtn.textContent='editar';
+  update();
+});
+
+document.getElementById('exportCsv').addEventListener('click', ()=>{
+  if(ledger.length===0) return;
+  const header = 'Titulo,Autor,Dewey,Cutter,Anio,Volumen,Signatura\n';
+  const rows = ledger.map(r=>[r.title,r.surname,r.dewey,r.cutter,r.year,r.vol,r.sig]
+    .map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+header+rows], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'signaturas_topograficas.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ---------------- Etiquetas de lomo (.docx) ---------------- */
+function cmToTwips(cm){ return Math.round(cm * 566.9291339); }
+function escXml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+async function buildLabelsDocx(records){
+  const LABEL_W = cmToTwips(10);   // ancho de cada recuadro
+  const LABEL_H = cmToTwips(2.5);  // alto de cada recuadro
+  const COLS = 2;
+  const PAGE_W = 12240, PAGE_H = 15840; // Carta (Letter)
+  const MARGIN = 360; // ~0,25"
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`;
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:docDefaults>
+<w:rPrDefault><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New" w:cs="Courier New"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:rPrDefault>
+</w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
+</w:styles>`;
+
+  const borderTag = `<w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="000000"/><w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>`;
+
+  function paragraph(text){
+    return `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New" w:cs="Courier New"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${escXml(text)}</w:t></w:r></w:p>`;
+  }
+
+  function cell(lines){
+    const cleanLines = (lines||[]).filter(l => l !== undefined && l !== null && String(l).trim() !== '');
+    const paras = cleanLines.length ? cleanLines.map(paragraph).join('\n') : paragraph('');
+    return `<w:tc><w:tcPr><w:tcW w:w="${LABEL_W}" w:type="dxa"/><w:tcBorders>${borderTag}</w:tcBorders><w:vAlign w:val="center"/></w:tcPr>
+${paras}
+</w:tc>`;
+  }
+
+  let rowsXml = '';
+  for(let i=0;i<records.length;i+=COLS){
+    const rowCells = [];
+    for(let c=0;c<COLS;c++){
+      const r = records[i+c];
+      const lines = r ? [r.dewey, r.cutter, r.year, r.vol ? ('V'+r.vol) : ''] : [];
+      rowCells.push(cell(lines));
+    }
+    rowsXml += `<w:tr><w:trPr><w:trHeight w:val="${LABEL_H}" w:hRule="exact"/></w:trPr>${rowCells.join('')}</w:tr>\n`;
+  }
+
+  const tblGrid = Array.from({length:COLS}).map(()=>`<w:gridCol w:w="${LABEL_W}"/>`).join('');
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+<w:body>
+<w:tbl>
+<w:tblPr><w:tblW w:w="${LABEL_W*COLS}" w:type="dxa"/><w:jc w:val="center"/><w:tblLayout w:type="fixed"/><w:tblLook w:val="0000" w:firstRow="0" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="0"/></w:tblPr>
+<w:tblGrid>${tblGrid}</w:tblGrid>
+${rowsXml}
+</w:tbl>
+<w:sectPr>
+<w:pgSz w:w="${PAGE_W}" w:h="${PAGE_H}"/>
+<w:pgMar w:top="${MARGIN}" w:right="${MARGIN}" w:bottom="${MARGIN}" w:left="${MARGIN}" w:header="0" w:footer="0" w:gutter="0"/>
+</w:sectPr>
+</w:body>
+</w:document>`;
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', contentTypes);
+  zip.folder('_rels').file('.rels', rootRels);
+  const wordFolder = zip.folder('word');
+  wordFolder.file('document.xml', documentXml);
+  wordFolder.file('styles.xml', styles);
+  wordFolder.folder('_rels').file('document.xml.rels', docRels);
+
+  const blob = await zip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+  return blob;
+}
+
+document.getElementById('printLabels').addEventListener('click', async ()=>{
+  if(ledger.length===0){
+    alert('Primero añada al menos una signatura a la lista de catalogación.');
+    return;
+  }
+  const btn = document.getElementById('printLabels');
+  const old = btn.textContent;
+  btn.textContent = 'Generando...';
+  btn.disabled = true;
+  try{
+    const records = ledger.map(r=>({dewey:r.dewey, cutter:r.cutter, year:r.year, vol:r.vol}));
+    const blob = await buildLabelsDocx(records);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'etiquetas_lomo.docx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(err){
+    console.error(err);
+    alert('No se pudo generar el documento. Verifique su conexión a internet (se requiere para cargar la librería de compresión) e intente de nuevo.');
+  } finally {
+    btn.textContent = old;
+    btn.disabled = false;
+  }
+});
+
+update();
+</script>
+</body>
+</html>
